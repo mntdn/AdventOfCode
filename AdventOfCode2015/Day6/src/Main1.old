@@ -1,0 +1,70 @@
+module Main1 (main) where
+import System.IO  
+import Text.Regex.TDFA
+
+wordsWhen     :: (Char -> Bool) -> String -> [String]
+wordsWhen p s =  case dropWhile p s of
+                      "" -> []
+                      s' -> w : wordsWhen p s''
+                            where (w, s'') = break p s'
+
+getlines :: Handle -> IO [String]
+getlines h = hGetContents h >>= return . lines
+
+generateGrid :: Int -> Int -> [[Bool]]
+generateGrid 1 b = [ x /= x |x <- [1..b]]:[]
+generateGrid a b = [ x /= x |x <- [1..b]]:generateGrid (a-1) b
+
+showGrid :: [[Bool]] -> String
+showGrid [] = ""
+showGrid (x:xs) = ([ if a == False then '.' else '+' | a <- x]) ++ "\n" ++ showGrid xs
+
+getRegexResults :: (String, String, String, [String]) -> (String, (Int, Int), (Int, Int))
+getRegexResults (_,_,_,a) = (
+  a!!0, 
+  (read ((split (a!!1))!!0) :: Int, read ((split (a!!1))!!1) :: Int), 
+  (read ((split (a!!2))!!0) :: Int, read ((split (a!!2))!!1) :: Int)
+  )
+  where split = wordsWhen (==',')
+
+first (a,_,_) = a
+second (_,a,_) = a
+third (_,_,a) = a
+
+testString :: String -> (String, (Int, Int), (Int, Int))
+testString s = getRegexResults (s =~ "([turn on|toggle|turn off]+) ([0-9,]+) through ([0-9,]+)" :: (String, String, String, [String]))
+
+switchBulb :: String -> Bool -> Bool
+switchBulb o a
+  | o == "turn on" = True
+  | o == "turn off" = False
+  | otherwise = not a
+
+processLine :: String -> Int -> Int -> Int -> [Bool] -> [Bool]
+processLine _ _ _ _ [] = []
+processLine o x1 x2 p (x:xs) = (if p >= x1 && p <= x2 then switchBulb o x else x):processLine o x1 x2 (p+1) xs
+
+processBoard :: String -> (Int, Int) -> (Int, Int) -> Int -> [[Bool]] -> [[Bool]]
+processBoard _ _ _ _ [] = []
+processBoard o (x1,y1) (x2,y2) l (x:xs) = (if l >= y1 && l <= y2 then processLine o x1 x2 0 x else x):processBoard o (x1,y1) (x2,y2) (l+1) xs
+
+processOrder :: String -> [[Bool]] -> [[Bool]]
+processOrder order a = processBoard (first (testString order)) (second (testString order)) (third (testString order)) 0 a
+
+processContents :: [String] -> [[Bool]] -> [[Bool]]
+processContents [] a = a
+processContents (x:xs) a = processContents xs (processOrder x a)
+
+countOn :: [[Bool]] -> Int
+countOn [] = 0
+countOn (x:xs) = sum([if a == True then 1 else 0|a<-x]) + countOn xs
+main = do
+  let list = []
+  handle <- openFile "./data.txt" ReadMode
+  contents <- getlines handle
+  -- putStrLn (show (contents))
+  -- putStrLn (show (processLine "turn on" 1 2 0 [False,False,False,False,False]))
+  -- putStrLn (showGrid (processOrder val (generateGrid 10 10)))
+  -- putStrLn (showGrid (processContents contents (generateGrid 10 10)))
+  putStrLn (show (countOn (processContents contents (generateGrid 1000 1000))))
+  hClose handle   
