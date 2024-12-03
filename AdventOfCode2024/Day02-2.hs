@@ -39,14 +39,22 @@ nbTrue :: [Bool] -> Int
 nbTrue [] = 0
 nbTrue (x:xs) = (if x == True then 1 else 0) + (nbTrue xs)
 
+removeElem :: [Int] -> Int -> [Int]
+removeElem a b = take b a ++ drop (b+1) a
+
+trySafe :: [Int] -> [Int] -> [Bool]
+trySafe _ [] = []
+trySafe a (x:xs) = isSafe (removeElem a x):trySafe a xs
+
+isTrulySafe :: [Int] -> Bool
+isTrulySafe x
+    | isSafe x = True
+    | otherwise = (nbTrue (trySafe x [0..(length x)])) > 0
+
 val = getNumbers( wordsWhen (==' ') "7 6 9 2 1")
 main = do  
         let list = []
         handle <- openFile "data.txt" ReadMode
         contents <- getlines handle
-        putStrLn (show (nbTrue [isSafe (getNumbers( wordsWhen (==' ') x)) | x <- contents]))
-        -- putStrLn (show (val))
-        -- putStrLn (show (tail val))
-        -- putStrLn (show (head val))
-        -- putStrLn (show (isAllDown (tail val) (head val)))
+        putStrLn (show (nbTrue [isTrulySafe (getNumbers( wordsWhen (==' ') x)) | x <- contents]))
         hClose handle   
