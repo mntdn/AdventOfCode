@@ -45,6 +45,29 @@ namespace AdventCode2025
         public override long Part2()
         {
             long result = 0;
+            foreach (var l in inputContent)
+            {
+                foreach (var ranges in l.Split(","))
+                {
+                    var range = ranges.Split("-");
+                    long start = long.Parse(range[0]);
+                    long end = long.Parse(range[1]);
+                    for (long i = start; i <= end; i++)
+                    {
+                        var nbString = i.ToString();
+                        for(int j = 1; j <= nbString.Length / 2; j++)
+                        {
+                            var split = nbString.Split(new string(nbString.Take(j).ToArray()));
+                            if (split.Any(s => s.Length > 0))
+                                continue;
+                            Console.WriteLine($"{i}");
+                            result += i;
+                            break;
+                        }
+                    }
+                }
+
+            }
             return result;
         }
     }
